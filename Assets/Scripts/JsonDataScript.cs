@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 
+
+#region Model Classes
+
 [System.Serializable]
 public class DataHitCoins
 {
@@ -30,17 +33,26 @@ public class MuskyAndPrice
     public int price;
 }
 
+#endregion
+
 public class JsonDataScript : MonoBehaviour
 {
 
     //In game things.
     public GameObject itemPrefabM , itemPrefabH;
-    public Transform parentObject;
-
+    public Transform parentObjectMuskey;
     public Transform parentObjectHit;
 
-    int dataIndex = 0;
+    public ScrollRect scrollRect;
+    private bool doItOneTime = true;
+    private DataMusky data = null;
+    private int dataIndex = 0;
 
+    void OnEnable()
+    {
+        //Subscribe to the ScrollRect event
+        scrollRect.onValueChanged.AddListener(scrollRectCallBack);
+    }
 
     private void Start()
     {
@@ -48,10 +60,8 @@ public class JsonDataScript : MonoBehaviour
         StartCoroutine(JsonFromUrl("https://s3-ap-southeast-1.amazonaws.com/cdn.hitwicket.co/sample_test_musky.json",false));
     }
 
-
     IEnumerator JsonFromUrl(string url,bool isHit)
     {
-      //  string url = "https://s3-ap-southeast-1.amazonaws.com/cdn.hitwicket.co/sample_test_hitcoins.json";
         WWW www = new WWW(url);
         yield return www;
         if (www.error == null)
@@ -68,84 +78,68 @@ public class JsonDataScript : MonoBehaviour
         
     }
 
-
     private void ProcessjsonHIt(string jsonString)
     {
-        Debug.Log(jsonString);
         DataHitCoins data1 = JsonUtility.FromJson<DataHitCoins>(jsonString);
 
         //putting data to game components.
 
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < data1.coin_and_price.Length; i++)
         {
             GameObject temp = Instantiate(itemPrefabH, parentObjectHit);
             temp.transform.GetChild(1).GetComponent<Text>().text = data1.coin_and_price[i].quantity + "Coins";
             temp.transform.GetChild(2).GetChild(0).GetComponent<Text>().text = data1.coin_and_price[i].product_price.ToString();
-
-
         }
     }
 
-
-    DataMusky data = null;
     private void Processjson(string jsonString)
     {
-        Debug.Log(jsonString);
         data = JsonUtility.FromJson<DataMusky>(jsonString);
 
         //putting data to game components.
 
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < 20; i++)
         {
-            GameObject temp = Instantiate(itemPrefabM, parentObject);
+            GameObject temp = Instantiate(itemPrefabM, parentObjectMuskey);
             temp.transform.GetChild(1).GetComponent<Text>().text = data.musky_and_price[i].months  + "Months";
             temp.transform.GetChild(2).GetChild(0).GetComponent<Text>().text = data.musky_and_price[i].price.ToString();
 
         }
-        dataIndex = 50;
+        dataIndex = 20;
 
     }
 
     public void ShowMoreData()
     {
-        if (data.musky_and_price.Length >= dataIndex + 50)
+        if (data.musky_and_price.Length >= dataIndex + 20)
         {
 
-            for (int i = dataIndex; i < dataIndex + 50; i++)
+            for (int i = dataIndex; i < dataIndex + 20; i++)
             {
-                GameObject temp = Instantiate(itemPrefabM, parentObject);
+                GameObject temp = Instantiate(itemPrefabM, parentObjectMuskey);
                 temp.transform.GetChild(1).GetComponent<Text>().text = data.musky_and_price[i].months + "Months";
                 temp.transform.GetChild(2).GetChild(0).GetComponent<Text>().text = data.musky_and_price[i].price.ToString();
 
             }
-            dataIndex += 50;
+            dataIndex += 20;
         }
 
         else
         {
             for (int i = dataIndex; i < data.musky_and_price.Length; i++)
             {
-                GameObject temp = Instantiate(itemPrefabM, parentObject);
+                GameObject temp = Instantiate(itemPrefabM, parentObjectMuskey);
                 temp.transform.GetChild(1).GetComponent<Text>().text = data.musky_and_price[i].months + "Months";
                 temp.transform.GetChild(2).GetChild(0).GetComponent<Text>().text = data.musky_and_price[i].price.ToString();
 
             }
+
+            scrollRect.onValueChanged.RemoveAllListeners();
         }
     }
 
-    public ScrollRect scrollRect;
-    bool doItOneTime = true;
-
-    void OnEnable()
-    {
-        //Subscribe to the ScrollRect event
-        scrollRect.onValueChanged.AddListener(scrollRectCallBack);
-    }
-
-    //Will be called when ScrollRect changes
     void scrollRectCallBack(Vector2 value)
     {
-        Debug.Log("ScrollRect Changed: " + value);
         if(value.y <= 0.1f && doItOneTime)
         {
             doItOneTime = false;
@@ -156,6 +150,4 @@ public class JsonDataScript : MonoBehaviour
             doItOneTime = true;
         }
     }
-
-
 }
